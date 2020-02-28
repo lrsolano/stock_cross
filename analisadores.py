@@ -10,7 +10,7 @@ def data_stock(tick,inicio='2014-01-01',fim=date.today()):
     return df
 
 #Cria o DataFrame da media movel exponencial
-def return_ema(tick,inicio='2014-01-01',fim=date.today(),window=8,colum='ema'):
+def return_ema(tick,inicio='2014-01-01',fim=date.today(),window=7,colum='ema'):
     df=wb.DataReader(tick,'yahoo',inicio,fim)
     emas = ti.ema(df['Close'].values,window)
     #Cria o DataFrame com os valores da media movel e usa a data como indice
@@ -18,7 +18,7 @@ def return_ema(tick,inicio='2014-01-01',fim=date.today(),window=8,colum='ema'):
     return emas
 
 #Cria o DataFrame da media movel simples
-def return_sma(tick,inicio='2014-01-01',fim=date.today(),window=8,colum='sma'):
+def return_sma(tick,inicio='2014-01-01',fim=date.today(),window=7,colum='sma'):
     df=wb.DataReader(tick,'yahoo',inicio,fim)
     smas = ti.sma(df['Close'].values,window)
      #Cria o DataFrame com os valores da media movel e usa a data como indice
@@ -38,8 +38,10 @@ def cross_sma(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     df['dif'] = (df['sma1'] - df['sma2'] )
     #Cria a coluna co os valores de entrada quando o setup armar
     df['start'] = np.where((df['dif']>=0) & (df.shift(1)['dif']<=0),df['High'],np.NaN)
+    df['stop'] =  np.where((df['dif']<=0) & (df.shift(1)['dif']>=0),df['Low'],np.NaN)
     #separa os pontos de entrada
     entry_points = df[df['start']>0]['start']
+    exit_points = df[df['stop']>0]['stop']
     #plota o grafico
     import plotly.graph_objects as go
     stock = go.Candlestick(x=df.index,
@@ -50,6 +52,10 @@ def cross_sma(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     entry = go.Scatter(x=entry_points.index, y=entry_points.values,
                     mode='markers',
                     marker=dict(color='rgb(0,0,0)'),
+                    name='Entrys')
+    exits = go.Scatter(x=exit_points.index, y=exit_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,255)'),
                     name='Entrys')
     ema_fast = go.Scatter(x=df.index, 
                        y=df['sma1'],
@@ -62,8 +68,8 @@ def cross_sma(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
                        line=dict(color='rgb(210,105,30)'),
                        name='sma slow')
     
-    fig = go.Figure(data=[stock,entry,ema_fast,ema_slow])
-    fig.write_html('fig_cross_sma.html', auto_open=True)
+    fig = go.Figure(data=[stock,entry,ema_fast,ema_slow,exits])
+    fig.write_html('fig_cross_sma.html', auto_open=False)
     return df
 
 #Setup do cruzamento de médias móveis exponenciais
@@ -79,8 +85,10 @@ def cross_ema(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     df['dif'] = (df['ema1'] - df['ema2'] )
     #Cria a coluna co os valores de entrada quando o setup armar
     df['start'] = np.where((df['dif']>=0) & (df.shift(1)['dif']<=0),df['High'],np.NaN)
+    df['stop'] =  np.where((df['dif']<=0) & (df.shift(1)['dif']>=0),df['Low'],np.NaN)
     #separa os pontos de entrada
     entry_points = df[df['start']>0]['start']
+    exit_points = df[df['stop']>0]['stop']
     #plota o grafico
     import plotly.graph_objects as go
     stock = go.Candlestick(x=df.index,
@@ -102,10 +110,16 @@ def cross_ema(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
                        mode='lines',
                        line=dict(color='rgb(210,105,30)'),
                        name='ema slow')
+    exits = go.Scatter(x=exit_points.index, y=exit_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,255)'),
+                    name='Entrys')
     
-    fig = go.Figure(data=[stock,entry,ema_fast,ema_slow])
-    fig.write_html('fig_cross_ema.html', auto_open=True)
+    fig = go.Figure(data=[stock,entry,ema_fast,ema_slow,exits])
+    fig.write_html('fig_cross_ema.html', auto_open=False)
     return df
+
+    
       
 
 
