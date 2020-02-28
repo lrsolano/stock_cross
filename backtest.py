@@ -17,7 +17,7 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
     if mode == 'sma':
         df = ana.cross_sma(tick,inicio,fim,window1,window2)
     else:
-        df = ana.cross_sma(tick,inicio,fim,window1,window2)
+        df = ana.cross_ema(tick,inicio,fim,window1,window2)
     #define os valores de compra e venda do modelo
     df['buy'] = np.where((df['High']>=df.shift(1)['start']),df.shift(1)['start'],0)
     df['sell'] = np.where((df['Low']<=df.shift(1)['stop']),df.shift(1)['stop'],0)
@@ -53,7 +53,7 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
         #verifica se está comprado e foi stopado
         if purchased == 1 and day['Low'] <= stop_loss:
             #verifica se stop é maior que o valor do dia, caso tenha aberto em gap
-            if stop_loss > day['Low']:
+            if stop_loss >= day['High']:
                 price_sell = round(day['Low'],2)
             else:
                 price_sell = round(stop_loss, 2)
@@ -76,7 +76,7 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
     print('Total de lucro: R${}'.format(total))
     
     if graphic==True:
-        graphic(df,buys,sells)
+        graphics(df,buys,sells)
     
 #gera o gráfico   
 def graphics(df,buys,sells):
