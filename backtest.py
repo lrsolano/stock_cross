@@ -3,19 +3,26 @@ import pandas as pd
 import numpy as np
 from datetime import date
 
-def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.05,graphic=True):
+def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.05,graphic=True,window_ifr=14,sup=70,inf=30):
     '''Tick = código ação
-        mode = sma/ema
+        mode = sma/ema/ifr
         window1 = periodo rapido
         window2 = periodo lento
         inicio = inicio do periodo
         fim = final do periodo
         max_loss = perda máxima
         min_gain = ganho minimo para parcial
-        graphic = ver grafico após o modelo rodar True/False'''
+        graphic = ver grafico após o modelo rodar True/False
+        window_ifr = janela para o indice de força relativa
+        sup = intervalo superior ifr
+        inf = intervalo inferior ifr'''
     #verifica o tipo de setup
     if mode == 'sma':
         df = ana.cross_sma(tick,inicio,fim,window1,window2)
+    elif mode == 'ema':
+        df = ana.cross_ema(tick,inicio,fim,window1,window2)
+    elif mode == 'ifr':
+        df = ana.sinal_ifr(tick,inicio,fim,window_ifr,sup,inf)
     else:
         df = ana.cross_ema(tick,inicio,fim,window1,window2)
     #define os valores de compra e venda do modelo
@@ -50,6 +57,8 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
             print("Venda no valor de: {}".format(round(day['sell'],2)))
             new_row = {'date':x, 'price':round(day['sell'],2)}
             sells = sells.append(new_row,ignore_index=True)
+            parc = round(amount+price_buy,2)   
+            print('Lucro atual: R${}'.format(parc))
         #verifica se está comprado e foi stopado
         if purchased == 1 and day['Low'] <= stop_loss:
             #verifica se stop é maior que o valor do dia, caso tenha aberto em gap
@@ -63,6 +72,8 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
             new_row = {'date':x, 'price':round(price_sell,2)}
             sells = sells.append(new_row,ignore_index=True)
             print("Stopado no valor de: {}".format(price_sell))
+            parc = round(amount+price_buy,2)   
+            print('Lucro atual: R${}'.format(parc))
             
         #verifica se é a primeira parcial  
         if (purchased == 1) and (day['High']>=price_buy*min_gain) and (min_first==0):
@@ -71,11 +82,11 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
         #cria outras parciais
         if (purchased == 1) and (day['High']>=stop_loss*min_gain) and (min_first==1):
             stop_loss = round(day['High']) * max_loss
+        #parciais de lucro
     
-    total = round(amount+price_buy,2)        
-    print('Total de lucro: R${}'.format(total))
+
     
-    if graphic==True:
+    if graphic:
         graphics(df,buys,sells)
     
 #gera o gráfico   
@@ -93,7 +104,7 @@ def graphics(df,buys,sells):
     exits = go.Scatter(x=sells['date'], y=sells['price'],
                     mode='markers',
                     marker=dict(color='rgb(0,0,255)'),
-                    name='Entrys')
+                    name='Exits')
     
     fig = go.Figure(data=[stock,entry,exits])
     fig.write_html('fig_backtest.html', auto_open=True)

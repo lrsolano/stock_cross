@@ -24,6 +24,14 @@ def return_sma(tick,inicio='2014-01-01',fim=date.today(),window=7,colum='sma'):
      #Cria o DataFrame com os valores da media movel e usa a data como indice
     smas = pd.DataFrame(data = smas, index = df.index[(window-1):], columns=[colum])
     return smas
+#Cria o DataFrame do indice de força relativa
+def return_ifr(tick,inicio='2014-01-01',fim=date.today(),window=7,colum='ifr'):
+    df=wb.DataReader(tick,'yahoo',inicio,fim)
+    #retorna o indice de força relativa 
+    ifrs = ti.rsi(df['Close'].values,window)
+     #Cria o DataFrame com os valores da media movel e usa a data como indice
+    ifrs = pd.DataFrame(data = ifrs, index = df.index[(window):], columns=[colum])
+    return ifrs
 
 #Setup do cruzamento de médias móveis simples
 def cross_sma(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
@@ -36,7 +44,7 @@ def cross_sma(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     df = pd.concat([stocks,sma1, sma2], axis=1, join='inner')
     #Cria a coluna de diferença das médias moveis
     df['dif'] = (df['sma1'] - df['sma2'] )
-    #Cria a coluna co os valores de entrada quando o setup armar
+    #Cria a coluna com os valores de entrada quando o setup armar
     df['start'] = np.where((df['dif']>=0) & (df.shift(1)['dif']<=0),df['High'],np.NaN)
     df['stop'] =  np.where((df['dif']<=0) & (df.shift(1)['dif']>=0),df['Low'],np.NaN)
     #separa os pontos de entrada
@@ -83,7 +91,7 @@ def cross_ema(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     df = pd.concat([stocks,ema1, ema2], axis=1, join='inner')
     #Cria a coluna de diferença das médias moveis
     df['dif'] = (df['ema1'] - df['ema2'] )
-    #Cria a coluna co os valores de entrada quando o setup armar
+    #Cria a coluna com os valores de entrada quando o setup armar
     df['start'] = np.where((df['dif']>=0) & (df.shift(1)['dif']<=0),df['High'],np.NaN)
     df['stop'] =  np.where((df['dif']<=0) & (df.shift(1)['dif']>=0),df['Low'],np.NaN)
     #separa os pontos de entrada
@@ -117,6 +125,45 @@ def cross_ema(tick,inicio='2014-01-01',fim=date.today(),window1=7,window2=21):
     
     fig = go.Figure(data=[stock,entry,ema_fast,ema_slow,exits])
     fig.write_html('fig_cross_ema.html', auto_open=False)
+    return df
+
+def sinal_ifr(tick,inicio='2014-01-01',fim=date.today(),window=14,sup=70,inf=30):
+    #cria o dataframe com o indice de força relativa
+    ifrs = return_ifr(tick,inicio,fim,window)
+    #Busca as informações da ação
+    stocks =  data_stock(tick,inicio,fim)
+    #Une os dataframes
+    df = pd.concat([stocks,ifrs], axis=1, join='inner')
+    #Cria a coluna com os valores de entrada quando o setup armar
+    df['start'] = np.where((df['ifr']<=inf) & (df.shift(1)['ifr']>=df['ifr']),df['High'],np.NaN)
+    df['stop'] =  np.where((df['ifr']>=sup) & (df.shift(1)['ifr']<=df['ifr']),df['Low'],np.NaN)
+    #separa os pontos de entrada
+    entry_points = df[df['start']>0]['start']
+    exit_points = df[df['stop']>0]['stop']
+    #plota o grafico
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    fig = make_subplots(rows=2, cols=1)
+    
+    fig.add_trace(go.Candlestick(x=df.index,
+                        open=df['Open'],
+                        high=df['High'],
+                        low=df['Low'],
+                        close=df['Close']), row=1,col=1)
+    fig.add_trace(go.Scatter(x=entry_points.index, y=entry_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,0)'),
+                    name='Entrys'),row=1,col=1)
+    fig.add_trace(go.Scatter(x=exit_points.index, y=exit_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,255)'),
+                    name='Exits'),row=1,col=1)
+    fig.add_trace(go.Scatter(x=df.index, 
+                       y=df['ifr'],
+                       mode='lines',
+                       line=dict(color='rgb(255,20,147)'),
+                       name='ifr'),row=2,col=1)
+    fig.write_html('fig_ifr.html', auto_open=False)
     return df
 
     
