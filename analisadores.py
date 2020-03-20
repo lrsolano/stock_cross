@@ -165,7 +165,46 @@ def sinal_ifr(tick,inicio='2014-01-01',fim=date.today(),window=14,sup=70,inf=30)
                        name='ifr'),row=2,col=1)
     fig.write_html('fig_ifr.html', auto_open=False)
     return df
+#Setup 9.1
+def ema9_1(tick,inicio='2014-01-01',fim=date.today(),window=9):
+    emas = return_ema(tick,inicio,fim,window)
+    #Busca as informações da ação
+    stocks =  data_stock(tick,inicio,fim)
+    #Une os dataframes
+    df = pd.concat([stocks,emas], axis=1, join='inner')
+    #Retorna inclinação da média
+    df['dif'] = df['ema'] - df.shift(1)['ema']
+    #Setup aberto
+    df['start'] = np.where((df['dif']>0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['High'],np.NaN)
+    df['stop'] = np.where((df['dif']<0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['Low'],np.NaN)
 
+    #separa os pontos de entrada
+    entry_points = df[df['start']>0]['start']
+    exit_points = df[df['stop']>0]['stop']
+    #plota o grafico
+    import plotly.graph_objects as go
+    stock = go.Candlestick(x=df.index,
+                        open=df['Open'],
+                        high=df['High'],
+                        low=df['Low'],
+                        close=df['Close'])
+    entry = go.Scatter(x=entry_points.index, y=entry_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,0)'),
+                    name='Entrys')
+    ema = go.Scatter(x=df.index, 
+                       y=df['ema'],
+                       mode='lines',
+                       line=dict(color='rgb(255,20,147)'),
+                       name='ema')
+    exits = go.Scatter(x=exit_points.index, y=exit_points.values,
+                    mode='markers',
+                    marker=dict(color='rgb(0,0,255)'),
+                    name='exits')
+    
+    fig = go.Figure(data=[stock,entry,ema,exits])
+    fig.write_html('fig_ema9_1.html', auto_open=False)
+    return df
     
       
 

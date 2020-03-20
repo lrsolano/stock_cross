@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import date
 
-def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.05,graphic=True,window_ifr=14,sup=70,inf=30):
+def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.05,graphic=True,window_ifr=14,sup=70,inf=30,op_loss=0,window_ema9=9):
     '''Tick = código ação
         mode = sma/ema/ifr
         window1 = periodo rapido
@@ -23,6 +23,8 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
         df = ana.cross_ema(tick,inicio,fim,window1,window2)
     elif mode == 'ifr':
         df = ana.sinal_ifr(tick,inicio,fim,window_ifr,sup,inf)
+    elif mode == 'ema9':
+        df = ana.ema9_1(tick,inicio,fim,window_ema9)
     else:
         df = ana.cross_ema(tick,inicio,fim,window1,window2)
     #define os valores de compra e venda do modelo
@@ -33,6 +35,7 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
     price_buy = 0
     amount = 0
     min_first = 0
+    yesterday = 0
     #cria os dataframes dos graficos
     buys = pd.DataFrame(columns=['date','price'])
     sells = pd.DataFrame(columns=['date','price'])
@@ -42,11 +45,14 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
         #verifica se não tem nada comprado e se tem sinal de compra
         if purchased == 0 and day['buy']>0:
             price_buy = round(day['buy'],2)
-            stop_loss = round(price_buy * max_loss,2)
+            if op_loss == 0:
+                stop_loss = round(price_buy * max_loss,2)
+            else:
+                stop_loss = round(yesterday['Low'] - 0.05,2)
             amount -= price_buy
             purchased = 1
             min_first = 0
-            print("Compra no valor de: {}".format(price_buy))
+            print("*Compra no valor de: {}*".format(price_buy))            
             new_row = {'date':x, 'price':price_buy}
             buys = buys.append(new_row,ignore_index=True)
         #verifica se está comprado e tem sinal de venda   
@@ -77,12 +83,12 @@ def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',f
             
         #verifica se é a primeira parcial  
         if (purchased == 1) and (day['High']>=price_buy*min_gain) and (min_first==0):
-            stop_loss = round(day['High']) * max_loss
+            stop_loss = round(day['High'] * max_loss,2)
             min_first = 1
         #cria outras parciais
         if (purchased == 1) and (day['High']>=stop_loss*min_gain) and (min_first==1):
-            stop_loss = round(day['High']) * max_loss
-        #parciais de lucro
+            stop_loss = round(day['High'] * max_loss,2)
+        yesterday = df.loc[x]
     
 
     
