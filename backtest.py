@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import date
 
-def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.05,graphic=True,window_ifr=14,sup=70,inf=30,op_loss=0,window_ema9=9):
+def backtesting_cross(tick,mode='sma',window1=7,window2=21,inicio='2014-01-01',fim=date.today(),max_loss = 0.95,min_gain=1.10,graphic=True,window_ifr=14,sup=70,inf=30,op_loss=0,window_ema9=9):
     '''Tick = código ação
         mode = sma/ema/ifr
         window1 = periodo rapido

@@ -175,8 +175,8 @@ def ema9_1(tick,inicio='2014-01-01',fim=date.today(),window=9):
     #Retorna inclinação da média
     df['dif'] = df['ema'] - df.shift(1)['ema']
     #Setup aberto
-    df['start'] = np.where((df['dif']>0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['High'],np.NaN)
-    df['stop'] = np.where((df['dif']<0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['Low'],np.NaN)
+    df['start'] = np.where((df['dif']>0)  & (df.shift(1)['dif']<0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['High'],np.NaN)
+    df['stop'] = np.where((df['dif']<0) & (df.shift(1)['dif']>0) & (df['ema']>df['Low']) & (df['ema']<df['High']),df['Low'],np.NaN)
 
     #separa os pontos de entrada
     entry_points = df[df['start']>0]['start']
